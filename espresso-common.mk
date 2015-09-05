@@ -14,8 +14,8 @@
 # limitations under the License.
 #
 
-# Include omap4 common makefile
-$(call inherit-product, device/samsung/omap4-common/common.mk)
+# Include common omap4 makefile
+$(call inherit-product, hardware/ti/omap4/omap4.mk)
 
 DEVICE_PACKAGE_OVERLAYS += device/samsung/espresso-common/overlay/aosp-common
 
@@ -61,14 +61,14 @@ PRODUCT_COPY_FILES += \
 PRODUCT_PACKAGES += \
     audio.primary.piranha \
     audio.r_submix.default \
-    camera.piranha \
-    hwcomposer.piranha \
+    camera.omap4 \
     lights.piranha \
     libinvensense_mpl \
     power.piranha \
     sensors.piranha \
     geomagneticd \
-    orientationd
+    orientationd \
+    libsecril-client
 
 # F2FS filesystem
 PRODUCT_PACKAGES += \
@@ -81,6 +81,10 @@ PRODUCT_PACKAGES += \
 PRODUCT_PROPERTY_OVERRIDES += \
     persist.sys.isUsbOtgEnabled=true
 
+# Set default USB interface
+PRODUCT_DEFAULT_PROPERTY_OVERRIDES += \
+    persist.sys.usb.config=mtp
+
 # Charger
 PRODUCT_PACKAGES += \
     charger \
@@ -89,6 +93,11 @@ PRODUCT_PACKAGES += \
 # Samsung dock keyboard
 PRODUCT_PACKAGES += \
     dock_kbd_attach
+
+ifneq ($(filter p3100 p5100,$(TARGET_DEVICE)),)
+PRODUCT_PROPERTY_OVERRIDES += \
+    ro.telephony.ril_class=SamsungOmap4RIL
+endif
 
 # These are the hardware-specific features
 PRODUCT_COPY_FILES += \
@@ -122,9 +131,11 @@ PRODUCT_COPY_FILES += \
     packages/wallpapers/LivePicker/android.software.live_wallpaper.xml:system/etc/permissions/android.software.live_wallpaper.xml
 
 PRODUCT_PROPERTY_OVERRIDES += \
-    ro.opengles.version=131072
+    ro.opengles.version=131072 \
+    ro.bq.gpu_to_cpu_unsupported=1
 
 PRODUCT_TAGS += dalvik.gc.type-precise
 
+$(call inherit-product-if-exists, vendor/samsung/omap4-common/common-vendor.mk)
 $(call inherit-product, frameworks/native/build/tablet-dalvik-heap.mk)
 $(call inherit-product-if-exists, hardware/broadcom/wlan/bcmdhd/firmware/bcm4330/device-bcm.mk)

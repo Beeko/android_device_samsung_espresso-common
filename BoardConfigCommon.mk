@@ -14,10 +14,10 @@
 # limitations under the License.
 #
 
-# This variable is set first, so it can be overridden
-# by BoardConfigVendor.mk
+# Inherit common omap4 board config
+-include hardware/ti/omap4/BoardConfigCommon.mk
 
--include device/samsung/omap4-common/BoardConfigCommon.mk
+TARGET_SPECIFIC_HEADER_PATH += device/samsung/espresso-common/include
 
 TARGET_NO_BOOTLOADER := true
 TARGET_NO_RADIOIMAGE := true
@@ -34,6 +34,16 @@ BOARD_KERNEL_BASE := 0x40000000
 # Use dlmalloc
 MALLOC_IMPL := dlmalloc
 
+# External SGX Module
+SGX_MODULES:
+	make clean -C $(HARDWARE_TI_OMAP4_BASE)/pvr-source/eurasiacon/build/linux2/omap4430_android
+	cp $(TARGET_KERNEL_SOURCE)/drivers/video/omap2/omapfb/omapfb.h $(KERNEL_OUT)/drivers/video/omap2/omapfb/omapfb.h
+	make -j8 -C $(HARDWARE_TI_OMAP4_BASE)/pvr-source/eurasiacon/build/linux2/omap4430_android ARCH=arm KERNEL_CROSS_COMPILE=arm-eabi- CROSS_COMPILE=arm-eabi- KERNELDIR=$(KERNEL_OUT) TARGET_PRODUCT="blaze_tablet" BUILD=release TARGET_SGX=540 PLATFORM_VERSION=4.0
+	mv $(KERNEL_OUT)/../../target/kbuild/pvrsrvkm_sgx540_120.ko $(KERNEL_MODULES_OUT)
+	$(ARM_EABI_TOOLCHAIN)/arm-eabi-strip --strip-unneeded $(KERNEL_MODULES_OUT)/pvrsrvkm_sgx540_120.ko
+
+TARGET_KERNEL_MODULES += SGX_MODULES
+
 # Init
 TARGET_PROVIDES_INIT := true
 TARGET_PROVIDES_INIT_TARGET_RC := true
@@ -49,8 +59,6 @@ BOARD_FLASH_BLOCK_SIZE := 4096
 
 # F2FS filesystem
 TARGET_USERIMAGES_USE_F2FS := true
-
-USE_OPENGL_RENDERER := true
 
 # Vold
 BOARD_VOLD_MAX_PARTITIONS := 12
@@ -88,23 +96,27 @@ BOARD_CHARGER_SHOW_PERCENTAGE := true
 # Sensors
 BOARD_USE_LEGACY_SENSORS_FUSION := false
 
-# Security
-BOARD_USES_SECURE_SERVICES := true
-
 # Selinux
 BOARD_SEPOLICY_DIRS += \
     device/samsung/espresso-common/sepolicy
 
 BOARD_SEPOLICY_UNION += \
+    bluetooth.te \
     device.te \
     dock_kbd_attach.te \
+    domain.te \
     file.te \
     file_contexts \
     geomagneticd.te \
-    orientationd.te \
     gpsd.te \
+    init.te \
+    orientationd.te \
+    pvrsrvinit.te \
+    radio.te \
+    rild.te \
     smc_pa.te \
-    sysinit.te
+    sysinit.te \
+    wpa_supplicant.te
 
 # Recovery
 TARGET_RECOVERY_PIXEL_FORMAT := "BGRA_8888"
@@ -120,3 +132,11 @@ BOARD_HAS_DOWNLOAD_MODE := true
 
 BOARD_CUSTOM_BOOTIMG_MK := device/samsung/espresso-common/custombootimg.mk
 BOARD_CANT_BUILD_RECOVERY_FROM_BOOT_PATCH := true
+
+ifneq ($(filter p3100 p5100,$(TARGET_DEVICE)),)
+# RIL
+BOARD_VENDOR := samsung
+BOARD_PROVIDES_LIBRIL := true
+BOARD_MODEM_TYPE := xmm6260
+BOARD_RIL_CLASS := ../../../device/samsung/espresso-common/ril
+endif

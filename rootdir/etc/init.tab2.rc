@@ -25,6 +25,7 @@ on init
     symlink /storage/usbdisk0 /mnt/usbdisk0
 
 # KSM
+    write /sys/kernel/mm/ksm/deferred_timer 1
     write /sys/kernel/mm/ksm/pages_to_scan 100
     write /sys/kernel/mm/ksm/sleep_millisecs 500
     write /sys/kernel/mm/ksm/run 1
@@ -51,7 +52,7 @@ on fs
     mount_all /fstab.espresso
 
     # Enable zRAM
-    swapon_all /fstab.qcom
+    swapon_all /fstab.espresso
 
 # We chown/chmod /efs because mount is run as root + defaults
     chown radio system /efs
@@ -427,6 +428,13 @@ on property:ro.bootmode=charger
 service charger /charger
     class charger
     user root
+
+# Set CPU values
+on property:sys.boot_completed=1
+    write /sys/module/cpu_boost/parameters/boost_ms 20
+    write /sys/module/cpu_boost/parameters/sync_threshold 1200000
+    write /sys/module/cpu_boost/parameters/input_boost_freq 1008000
+    write /sys/module/cpu_boost/parameters/input_boost_ms 40
 
 ## CyanogenMod Performance Profiles
 # Powersave
